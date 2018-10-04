@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">MemeticaMee</string>
+    <string name="sing_in_label">Start sending messages</string>
+    <string name="title_home">Home</string>
+    <string name="title_people">Personas</string>
+    <string name="title_my_account">Mi Cuenta</string>
+    <string name="button_sing_in">Continue &amp; Sing In</string>
+    <string name="send_message_hint">Write your message</string>
+    <string name="ja_je_ji_jo">JAJAJAJAJAA JEJEJEJEEJEJ JIJIJIJIJI JOJOJOJOJO</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
