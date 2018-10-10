@@ -7,7 +7,11 @@
     <string name="button_sing_in">Continue &amp; Sing In</string>
     <string name="send_message_hint">Write your message</string>
     <string name="ja_je_ji_jo">JAJAJAJAJAA JEJEJEJEEJEJ JIJIJIJIJI JOJOJOJOJO</string>
-
+    <string name="contacts_permissions_rationale">Memeticame requires access to your contact list in order to enable you to chat with said contacts.
+        Do you want to grant this permission?</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="add_contact">Add Contact</string>
 </resources>

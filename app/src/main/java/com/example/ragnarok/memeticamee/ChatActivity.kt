@@ -1,16 +1,13 @@
 package com.example.ragnarok.memeticamee
 
 import android.app.Activity
-import android.content.ClipData
 import android.content.Intent
 import android.graphics.Bitmap
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Message
 import android.provider.MediaStore
 import android.support.v7.widget.LinearLayoutManager
 import com.example.ragnarok.memeticamee.model.ImageMessage
-import com.example.ragnarok.memeticamee.model.MessageType
 import com.example.ragnarok.memeticamee.model.TextMessage
 import com.example.ragnarok.memeticamee.model.User
 import com.example.ragnarok.memeticamee.util.FirestoreUtil
@@ -22,7 +19,6 @@ import com.xwray.groupie.Section
 import com.xwray.groupie.kotlinandroidextensions.Item
 import com.xwray.groupie.kotlinandroidextensions.ViewHolder
 import kotlinx.android.synthetic.main.activity_chat.*
-import org.jetbrains.anko.toast
 import java.io.ByteArrayOutputStream
 import java.util.*
 
@@ -65,7 +61,7 @@ class ChatActivity : AppCompatActivity() {
                 FirestoreUtil.sendMessage(messageToSend, channelId)
             }
 
-            fab_send_image.setOnClickListener {
+            fab_send.setOnClickListener {
                 val intent = Intent().apply {
                     type = "image/*"
                     action = Intent.ACTION_GET_CONTENT
