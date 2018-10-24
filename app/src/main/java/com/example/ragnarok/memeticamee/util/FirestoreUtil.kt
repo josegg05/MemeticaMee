@@ -3,13 +3,12 @@ package com.example.ragnarok.memeticamee.util
 import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.ContactsContract
+import android.support.v4.content.ContextCompat
 
 
 import android.util.Log
 import com.example.ragnarok.memeticamee.model.*
-import com.example.ragnarok.memeticamee.recyclerview.item.ImageMessageItem
-import com.example.ragnarok.memeticamee.recyclerview.item.PersonItem
-import com.example.ragnarok.memeticamee.recyclerview.item.TextMessageItem
+import com.example.ragnarok.memeticamee.recyclerview.item.*
 import com.example.ragnarok.memeticamee.task.ContactSetupTask
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
@@ -18,6 +17,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.xwray.groupie.kotlinandroidextensions.Item
 import java.lang.NullPointerException
 import java.lang.ref.WeakReference
+
 
 object FirestoreUtil {
     private val firestoreInstance: FirebaseFirestore by lazy {FirebaseFirestore.getInstance()}
@@ -73,44 +73,50 @@ object FirestoreUtil {
                     }
 
                     //exp1i
-                    val contacts: MutableList<AndroidContact> = ArrayList()
-                    val contactCursor = context.contentResolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, ContactsContract.Contacts.DISPLAY_NAME)
-                    while (contactCursor.moveToNext()) {
-                        val contactId = contactCursor.getString(contactCursor.getColumnIndex(ContactsContract.Contacts._ID))
-                        val contactName = contactCursor.getString(contactCursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
-                        var contactEmail: String? = null
 
-                        val emailCursor = context.contentResolver.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI, null,
-                                "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = $contactId", null, null)
-                        if (emailCursor.moveToFirst()) {
-                            // TODO: a contact can have multiple emails, for this demo, we are only considering the first one he may have registered
-                            contactEmail = emailCursor.getString(emailCursor.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA))
-                        }
-                        emailCursor.close()
+                    var permissionCheck = ContextCompat.checkSelfPermission(context,
+                            android.Manifest.permission.READ_CONTACTS);
 
-                        if (contactEmail != null) {
-                            contacts.add(AndroidContact(contactEmail, contactName))
-                        }
-                    }
-                    contactCursor.close()
-                    //exp1f
+                    if (permissionCheck == 0) {
+                        val contacts: MutableList<AndroidContact> = ArrayList()
+                        val contactCursor = context.contentResolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, ContactsContract.Contacts.DISPLAY_NAME)
+                        while (contactCursor.moveToNext()) {
+                            val contactId = contactCursor.getString(contactCursor.getColumnIndex(ContactsContract.Contacts._ID))
+                            val contactName = contactCursor.getString(contactCursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME))
+                            var contactEmail: String? = null
 
-
-                    var isContact = false
-                    val items = mutableListOf<Item>()
-                    querySnapshot!!.documents.forEach {doc1 ->
-                        if (doc1.id != FirebaseAuth.getInstance().currentUser?.uid) {
-                            contacts.forEach {
-                                if (doc1["email"] == it.email)
-                                    isContact = true
+                            val emailCursor = context.contentResolver.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI, null,
+                                    "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = $contactId", null, null)
+                            if (emailCursor.moveToFirst()) {
+                                // TODO: a contact can have multiple emails, for this demo, we are only considering the first one he may have registered
+                                contactEmail = emailCursor.getString(emailCursor.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA))
                             }
-                            if (isContact) {
-                                items.add(PersonItem(doc1.toObject(User::class.java)!!, doc1.id, context))
+                            emailCursor.close()
+
+                            if (contactEmail != null) {
+                                contacts.add(AndroidContact(contactEmail, contactName))
                             }
-                            isContact = false
                         }
+                        contactCursor.close()
+                        //exp1f
+
+
+                        var isContact = false
+                        val items = mutableListOf<Item>()
+                        querySnapshot!!.documents.forEach { doc1 ->
+                            if (doc1.id != FirebaseAuth.getInstance().currentUser?.uid) {
+                                contacts.forEach {
+                                    if (doc1["email"] == it.email)
+                                        isContact = true
+                                }
+                                if (isContact) {
+                                    items.add(PersonItem(doc1.toObject(User::class.java)!!, doc1.id, context))
+                                }
+                                isContact = false
+                            }
+                        }
+                        onListen(items)
                     }
-                    onListen(items)
                 }
     }
 
@@ -158,8 +164,12 @@ object FirestoreUtil {
                     querySnapshot!!.documents.forEach {
                         if (it["type"] == MessageType.TEXT)
                             items.add(TextMessageItem(it.toObject(TextMessage::class.java)!!, context))
-                        else
+                        else if (it["type"] == MessageType.IMAGE)
                             items.add(ImageMessageItem(it.toObject(ImageMessage::class.java)!!, context))
+                        else if (it["type"] == MessageType.FILE)
+                            items.add(FileMessageItem(it.toObject(FileMessage::class.java)!!, context))
+                        else if (it["type"] == MessageType.AUDIO)
+                            items.add(AudioMessageItem(it.toObject(AudioMessage::class.java)!!, context))
                         return@forEach
                     }
                     onListen(items)

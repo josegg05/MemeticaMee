@@ -31,31 +31,34 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        replaceFragment(PeopleFragment())
-
         //exp1
         if (!contactsPermissionGranted) {
             requestContactsPermission()
         }
+        else {
+            replaceFragment(PeopleFragment())
 
-        addBtn.setOnClickListener{
-            addContact()
+            addBtn.setOnClickListener {
+                addContact()
+            }
         }
-
         navigation.setOnNavigationItemSelectedListener {
-            when (it.itemId){
+            when (it.itemId) {
                 R.id.navigation_people -> {
+                    addBtn.show()
                     replaceFragment(PeopleFragment())
                     true
                 }
                 R.id.navigation_my_account -> {
+                    addBtn.hide()
                     replaceFragment(MyAccountFragment())
                     true
                 }
                 else -> false
-
             }
         }
+
+
     }
 
     private fun replaceFragment(fragment: Fragment) {
@@ -81,6 +84,22 @@ class MainActivity : AppCompatActivity() {
             requestPermissions(arrayOf(android.Manifest.permission.READ_CONTACTS), REQUEST_CODE_CONTACTS_PERMISSION)
         }
     }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            REQUEST_CODE_CONTACTS_PERMISSION -> {
+                if (grantResults[0] == 0) {
+                    replaceFragment(PeopleFragment())
+
+                    addBtn.setOnClickListener {
+                        addContact()
+                    }
+                }
+            }
+            else -> replaceFragment(MyAccountFragment())
+        }
+    }
+
     //exp1f}
 
     //exp2i

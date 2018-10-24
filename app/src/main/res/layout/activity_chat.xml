@@ -8,7 +8,7 @@
     tools:context=".ChatActivity">
 
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab_send_image"
+        android:id="@+id/fab_send_audio"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
@@ -18,7 +18,7 @@
         app:fabSize="mini"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/ic_image_black_24dp" />
+        app:srcCompat="@drawable/ic_mic_black_24dp" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_send_photo"
@@ -30,7 +30,7 @@
         android:tint="?attr/colorPrimary"
         app:fabSize="mini"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/fab_send_image"
+        app:layout_constraintStart_toEndOf="@+id/fab_send_audio"
         app:srcCompat="@drawable/ic_camera_alt_black_24dp" />
 
     <android.support.design.widget.FloatingActionButton
@@ -45,6 +45,19 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@+id/fab_send_photo"
         app:srcCompat="@drawable/ic_insert_drive_file_black_24dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_send_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="68dp"
+        android:tint="?attr/colorPrimary"
+        app:fabSize="mini"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/fab_send_file"
+        app:srcCompat="@drawable/ic_image_black_24dp" />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recycler_view_messages"

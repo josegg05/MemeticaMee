@@ -9,6 +9,10 @@
     <string name="ja_je_ji_jo">JAJAJAJAJAA JEJEJEJEEJEJ JIJIJIJIJI JOJOJOJOJO</string>
     <string name="contacts_permissions_rationale">Memeticame requires access to your contact list in order to enable you to chat with said contacts.
         Do you want to grant this permission?</string>
+    <string name="camera_permissions_rationale">Memeticame requires access to your camera in order to take a picture.
+        Do you want to grant this permission?</string>
+    <string name="record_permissions_rationale">Memeticame requires access to your microphone in order to record an audio.
+        Do you want to grant this permission?</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <!-- TODO: Remove or change this placeholder text -->
