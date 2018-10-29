@@ -12,11 +12,16 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
+import android.view.View
+import android.webkit.MimeTypeMap
+import android.widget.ProgressBar
 import android.widget.Toast
 import com.example.ragnarok.memeticamee.model.FileMessage
 import com.example.ragnarok.memeticamee.model.ImageMessage
 import com.example.ragnarok.memeticamee.model.TextMessage
 import com.example.ragnarok.memeticamee.model.User
+import com.example.ragnarok.memeticamee.recyclerview.item.FileMessageItem
+import com.example.ragnarok.memeticamee.recyclerview.item.ImageMessageItem
 import com.example.ragnarok.memeticamee.util.FirestoreUtil
 import com.example.ragnarok.memeticamee.util.StorageUtil
 import com.google.firebase.auth.FirebaseAuth
@@ -24,10 +29,15 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.UploadTask
 import com.xwray.groupie.GroupAdapter
+import com.xwray.groupie.OnItemClickListener
 import com.xwray.groupie.Section
 import com.xwray.groupie.kotlinandroidextensions.Item
 import com.xwray.groupie.kotlinandroidextensions.ViewHolder
 import kotlinx.android.synthetic.main.activity_chat.*
+import kotlinx.android.synthetic.main.activity_sing_in.*
+import kotlinx.android.synthetic.main.item_file_message.*
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.FilenameUtils
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -71,6 +81,7 @@ class ChatActivity : AppCompatActivity() {
         get() = StorageUtil.storageInstance.reference
                 .child(FirebaseAuth.getInstance().currentUser?.uid
                         ?: throw NullPointerException("UID is null."))
+
 
 
     override fun onRequestPermissionsResult(
@@ -157,6 +168,7 @@ class ChatActivity : AppCompatActivity() {
         fab_send_file.hide()
         fab_send_photo.hide()
         fab_send_image.hide()
+        downloadProgressBar.visibility = View.GONE
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = intent.getStringExtra(AppConstants.USER_NAME)
@@ -292,14 +304,20 @@ class ChatActivity : AppCompatActivity() {
             var file = contentResolver.openInputStream(uri)
             val filesize = (file.available()/1000).toString()
             val filename = java.io.File(data.data.path).nameWithoutExtension
-            var mReference = currentUserRef.child(uri.lastPathSegment)
+
+            val cr  = this.getContentResolver()
+            val mime = MimeTypeMap.getSingleton()
+            val ext = mime.getExtensionFromMimeType(cr.getType(uri))
+
             val name = uri.lastPathSegment
+            var mReference = currentUserRef.child(uri.lastPathSegment)
             try {
                 mReference.putFile(uri).addOnSuccessListener {
                     taskSnapshot: UploadTask.TaskSnapshot? -> var url = taskSnapshot!!.downloadUrl.toString()
                     Toast.makeText(this, "Archivo Enviado", Toast.LENGTH_LONG).show()
                     val messageToSend =
-                            FileMessage(mReference.toString(), name, Calendar.getInstance().time,
+                            //FileMessage(mReference.toString(), name, Calendar.getInstance().time,
+                            FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+name, filename, ext, Calendar.getInstance().time,
                                     FirebaseAuth.getInstance().currentUser!!.uid,
                                     otherUserId, currentUser.name)
                     FirestoreUtil.sendMessage(messageToSend, currentChannelId)
@@ -341,6 +359,7 @@ class ChatActivity : AppCompatActivity() {
                 adapter = GroupAdapter<ViewHolder>().apply {
                     messagesSection = Section(messages)
                     this.add(messagesSection)
+                    setOnItemClickListener(onItemClick)
                 }
             }
             shouldInitRecyclerView = false
@@ -406,4 +425,79 @@ class ChatActivity : AppCompatActivity() {
     }
     //exp3f}
 
+
+    //exp4
+    private val onItemClick = OnItemClickListener {item, view ->
+        if (item is FileMessageItem){
+            downloadToLocalFile(StorageUtil.storageInstance.getReference(item.message.filePath), item.message.extension)
+        }
+        else if (item is ImageMessageItem){
+            downloadToLocalImage(StorageUtil.storageInstance.getReference(item.message.imagePath))
+        }
+    }
+
+
+    private fun downloadToLocalFile(fileReference: StorageReference, ext: String){
+        if (!permissionToWriteAccepted) {
+            requestWritePermission()
+        }
+        else{
+            if (fileReference != null){
+                try {
+                    val dir = File(Environment.getExternalStorageDirectory().toString() + File.separator + "MemeticaMee")
+                    if (!dir.exists()) {
+                        dir.mkdirs()
+                    }
+                    val file = File(Environment.getExternalStorageDirectory().toString() + File.separator + "MemeticaMee" + "/" + UUID.randomUUID() + '.' + ext)
+
+                    fileReference.getFile(file)
+                            .addOnSuccessListener {
+                                Toast.makeText(this,"Descarga Finalizada", Toast.LENGTH_SHORT).show()
+                                downloadProgressBar.visibility = View.GONE
+                            }
+                            .addOnProgressListener {
+                                //Toast.makeText(this,"Descargando", Toast.LENGTH_SHORT).show()
+                                downloadProgressBar.visibility = View.VISIBLE
+                            }
+                }catch (e: IOException){
+                    e.printStackTrace()
+                    Toast.makeText(this,"Descarga Fallida", Toast.LENGTH_SHORT).show()
+                    downloadProgressBar.visibility = View.GONE
+                }
+            }
+        }
+    }
+
+    private fun downloadToLocalImage(fileReference: StorageReference){
+        if (!permissionToWriteAccepted) {
+            requestWritePermission()
+        }
+        else{
+            if (fileReference != null){
+                try {
+                    val dir = File(Environment.getExternalStorageDirectory().toString() + File.separator + "MemeticaMee")
+                    if (!dir.exists()) {
+                        dir.mkdirs()
+                    }
+                    val file = File(Environment.getExternalStorageDirectory().toString() + File.separator + "MemeticaMee" + "/" + UUID.randomUUID() + ".jpeg")
+
+                    fileReference.getFile(file)
+                            .addOnSuccessListener {
+                                Toast.makeText(this,"Descarga Finalizada", Toast.LENGTH_SHORT).show()
+                                downloadProgressBar.visibility = View.GONE
+                            }
+                            .addOnProgressListener {
+                                //Toast.makeText(this,"Descargando", Toast.LENGTH_SHORT).show()
+                                downloadProgressBar.visibility = View.VISIBLE
+                            }
+                }catch (e: IOException){
+                    e.printStackTrace()
+                    Toast.makeText(this,"Descarga Fallida", Toast.LENGTH_SHORT).show()
+                    downloadProgressBar.visibility = View.GONE
+                }
+            }
+        }
+    }
+
+    //exp4
 }

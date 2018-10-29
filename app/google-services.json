@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "260960776937-shfcn56c66ub2csq0k7kcp0o7v4caj6g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ragnarok.memeticamee",
+            "certificate_hash": "7205d582fa5b7f49ebb5db1c12376760ecace69b"
+          }
+        },
+        {
           "client_id": "260960776937-5fnuinnp1r8iaqa1mtcb8u8o1iee8a7m.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,8 +37,13 @@
           "status": 1
         },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "260960776937-5fnuinnp1r8iaqa1mtcb8u8o1iee8a7m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         },
         "ads_service": {
           "status": 2

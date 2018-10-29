@@ -3,8 +3,9 @@
 
     <item
         android:id="@+id/navigation_people"
-        android:icon="@drawable/ic_people_black_24dp"
+        android:icon="@drawable/ic_person_black_24dp"
         android:title="@string/title_people" />
+
 
     <item
         android:id="@+id/navigation_my_account"

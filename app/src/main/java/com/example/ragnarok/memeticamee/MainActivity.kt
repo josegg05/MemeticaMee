@@ -12,6 +12,7 @@ import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import com.example.ragnarok.memeticamee.fragment.GroupFragment
 import com.example.ragnarok.memeticamee.fragment.MyAccountFragment
 import com.example.ragnarok.memeticamee.fragment.PeopleFragment
 import kotlinx.android.synthetic.main.activity_main.*

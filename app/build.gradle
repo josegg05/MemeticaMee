@@ -58,6 +58,8 @@ dependencies {
     kapt "android.arch.persistence.room:compiler:1.1.1"
 
 
+    implementation "commons-io:commons-io:+"
+
     apply plugin: 'com.google.gms.google-services'
     //kotlin annotation processor
     apply plugin: 'kotlin-kapt'

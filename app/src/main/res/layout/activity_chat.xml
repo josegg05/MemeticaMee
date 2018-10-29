@@ -7,6 +7,21 @@
     android:background="#eeeeee"
     tools:context=".ChatActivity">
 
+    <ProgressBar
+        android:id="@+id/downloadProgressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="100dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="100dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="@+id/relativeLayout_message"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/recycler_view_messages"
+        app:layout_constraintVertical_bias="0.727" />
+
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_send_audio"
         android:layout_width="wrap_content"
