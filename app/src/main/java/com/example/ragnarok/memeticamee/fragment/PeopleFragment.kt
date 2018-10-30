@@ -11,7 +11,6 @@ import com.example.ragnarok.memeticamee.AppConstants
 import com.example.ragnarok.memeticamee.ChatActivity
 
 import com.example.ragnarok.memeticamee.R
-import com.example.ragnarok.memeticamee.model.AndroidContact
 import com.example.ragnarok.memeticamee.recyclerview.item.PersonItem
 import com.example.ragnarok.memeticamee.util.FirestoreUtil
 import com.google.firebase.firestore.ListenerRegistration

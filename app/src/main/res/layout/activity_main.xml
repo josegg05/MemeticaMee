@@ -21,6 +21,17 @@
         app:layout_constraintEnd_toEndOf="parent"/>
 
 
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/addGroupBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        app:layout_constraintBottom_toTopOf="@+id/navigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@drawable/ic_people_black_24dp" />
+
     <FrameLayout
         android:id="@+id/fragment_layout"
         android:layout_width="0dp"

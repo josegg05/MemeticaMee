@@ -16,6 +16,7 @@ import com.example.ragnarok.memeticamee.fragment.GroupFragment
 import com.example.ragnarok.memeticamee.fragment.MyAccountFragment
 import com.example.ragnarok.memeticamee.fragment.PeopleFragment
 import kotlinx.android.synthetic.main.activity_main.*
+import org.jetbrains.anko.startActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        addGroupBtn.hide()
         //exp1
         if (!contactsPermissionGranted) {
             requestContactsPermission()
@@ -42,24 +44,34 @@ class MainActivity : AppCompatActivity() {
             addBtn.setOnClickListener {
                 addContact()
             }
+
+            addGroupBtn.setOnClickListener {
+                addGroup()
+            }
         }
         navigation.setOnNavigationItemSelectedListener {
             when (it.itemId) {
                 R.id.navigation_people -> {
                     addBtn.show()
+                    addGroupBtn.hide()
                     replaceFragment(PeopleFragment())
+                    true
+                }
+                R.id.navigation_group -> {
+                    addBtn.hide()
+                    addGroupBtn.show()
+                    replaceFragment(GroupFragment())
                     true
                 }
                 R.id.navigation_my_account -> {
                     addBtn.hide()
+                    addGroupBtn.hide()
                     replaceFragment(MyAccountFragment())
                     true
                 }
                 else -> false
             }
         }
-
-
     }
 
     private fun replaceFragment(fragment: Fragment) {
@@ -112,4 +124,8 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
     //exp2f
+
+    private fun addGroup() {
+        startActivity<CreateGroupActivity>()
+    }
 }

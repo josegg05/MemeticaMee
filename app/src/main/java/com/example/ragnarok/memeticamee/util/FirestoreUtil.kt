@@ -26,9 +26,15 @@ object FirestoreUtil {
         get() = firestoreInstance.document("users/${FirebaseAuth.getInstance().currentUser?.uid
                 ?: throw NullPointerException("UID is null.")}")
 
+    private val currentGroupDocRef: DocumentReference
+        get() = firestoreInstance.document("groups/${FirebaseAuth.getInstance().currentUser?.uid
+                ?: throw NullPointerException("UID is null.")}")
+
     //private lateinit var localContacts: List<AndroidContact>
 
     private val chatChannelsCollectionRef = firestoreInstance.collection("chatChannels")
+
+    private val groupChannelsCollectionRef = firestoreInstance.collection("groupChannels")
 
 
     fun initCurrentUserIfFirstTime(onComplete: () -> Unit){
@@ -62,6 +68,22 @@ object FirestoreUtil {
                     onComplete(it.toObject(User::class.java)!!)
                 }
     }
+
+
+    fun createGroup(name: String = "", bio: String = "", profilePicturePath: String? = null){
+
+        val currentUserId = FirebaseAuth.getInstance().currentUser!!.uid
+        val groupToCreate = Group(name, bio, currentUserId, profilePicturePath, mutableListOf(),mutableListOf())
+
+        val newChannel = groupChannelsCollectionRef.document()
+        newChannel.set(groupToCreate)
+
+        currentUserDocRef
+                .collection("engagedGroupChannels")
+                .document(newChannel.id)
+                .set(mapOf("channelId" to newChannel.id))
+    }
+
 
     //Función que extrae los usuarios registrados y se rearga cada vez que e agrega uno nuevo
     fun addUsersListener(context: Context, onListen: (List<Item>) -> Unit): ListenerRegistration {
@@ -117,6 +139,28 @@ object FirestoreUtil {
                         }
                         onListen(items)
                     }
+                }
+    }
+
+
+    fun addGroupListener(context: Context, onListen: (List<Item>) -> Unit): ListenerRegistration {
+        return firestoreInstance.collection("groupChannels")
+                .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                    if (firebaseFirestoreException != null) {
+                        Log.e("FIRESTORE", "Group listener error.", firebaseFirestoreException)
+                        return@addSnapshotListener
+                    }
+
+                    val items = mutableListOf<Item>()
+                    querySnapshot!!.documents.forEach { doc1 ->
+                        val groupX = currentUserDocRef.collection("engagedGroupChannels")
+                                .document(doc1.id).get()
+                                    if (groupX != null) {
+                                        //TODO: puede que haya que cambiar en "GroupItem" el userID por groupID. Si no, hay que cambiar acá abajo el "doc1.id" por el userID
+                                        items.add(GroupItem(doc1.toObject(Group::class.java)!!, doc1.id, context))
+                                    }
+                    }
+                    onListen(items)
                 }
     }
 
@@ -178,6 +222,39 @@ object FirestoreUtil {
 
     fun sendMessage(message: Message, channelId: String) {
         chatChannelsCollectionRef.document(channelId)
+                .collection("messages")
+                .add(message)
+    }
+
+    //TODO: Arreglar estas dos funciones de abajo para el chat de grupo
+    fun addGroupChatMessagesListener(channelId: String, context: Context,
+                                onListen: (List<Item>) -> Unit): ListenerRegistration {
+        return groupChannelsCollectionRef.document(channelId).collection("messages")
+                .orderBy("time")
+                .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                    if (firebaseFirestoreException != null) {
+                        Log.e("FIRESTORE", "ChatMessagesListener error.", firebaseFirestoreException)
+                        return@addSnapshotListener
+                    }
+
+                    val items = mutableListOf<Item>()
+                    querySnapshot!!.documents.forEach {
+                        if (it["type"] == MessageType.TEXT)
+                            items.add(TextMessageItem(it.toObject(TextMessage::class.java)!!, context))
+                        else if (it["type"] == MessageType.IMAGE)
+                            items.add(ImageMessageItem(it.toObject(ImageMessage::class.java)!!, context))
+                        else if (it["type"] == MessageType.FILE)
+                            items.add(FileMessageItem(it.toObject(FileMessage::class.java)!!, context))
+                        else if (it["type"] == MessageType.AUDIO)
+                            items.add(AudioMessageItem(it.toObject(AudioMessage::class.java)!!, context))
+                        return@forEach
+                    }
+                    onListen(items)
+                }
+    }
+
+    fun sendGroupMessage(message: Message, channelId: String) {
+        groupChannelsCollectionRef.document(channelId)
                 .collection("messages")
                 .add(message)
     }

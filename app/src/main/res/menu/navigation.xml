@@ -6,6 +6,10 @@
         android:icon="@drawable/ic_person_black_24dp"
         android:title="@string/title_people" />
 
+    <item
+        android:id="@+id/navigation_group"
+        android:icon="@drawable/ic_people_black_24dp"
+        android:title="@string/title_group" />
 
     <item
         android:id="@+id/navigation_my_account"

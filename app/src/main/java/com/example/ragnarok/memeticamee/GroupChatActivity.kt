@@ -14,6 +14,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
 import android.view.View
 import android.webkit.MimeTypeMap
+import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
 import com.example.ragnarok.memeticamee.model.FileMessage
@@ -33,11 +34,8 @@ import com.xwray.groupie.OnItemClickListener
 import com.xwray.groupie.Section
 import com.xwray.groupie.kotlinandroidextensions.Item
 import com.xwray.groupie.kotlinandroidextensions.ViewHolder
-import kotlinx.android.synthetic.main.activity_chat.*
-import kotlinx.android.synthetic.main.activity_sing_in.*
-import kotlinx.android.synthetic.main.item_file_message.*
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.FilenameUtils
+import kotlinx.android.synthetic.main.activity_group_chat.*
+import org.jetbrains.anko.toast
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -53,7 +51,7 @@ private const val REQUEST_CODE_WRITE_EXTERNAL_PERMISSION = 10
 private const val REQUEST_CODE_READ_EXTERNAL_PERMISSION = 11
 
 
-class ChatActivity : AppCompatActivity() {
+class GroupChatActivity : AppCompatActivity() {
 
     private lateinit var currentChannelId: String
     private lateinit var currentUser: User
@@ -140,7 +138,7 @@ class ChatActivity : AppCompatActivity() {
             }
 
             start()
-            Toast.makeText(this@ChatActivity, "Record Starts", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@GroupChatActivity, "Record Starts", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -148,114 +146,113 @@ class ChatActivity : AppCompatActivity() {
         mRecorder?.apply {
             stop()
             release()
-            Toast.makeText(this@ChatActivity, "Record Stops", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@GroupChatActivity, "Record Stops", Toast.LENGTH_SHORT).show()
         }
         mRecorder = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_chat)
+        setContentView(R.layout.activity_group_chat)
 
-        //requestPermissions(arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_CODE_WRITE_EXTERNAL_PERMISSION)
-        //requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), REQUEST_CODE_READ_EXTERNAL_PERMISSION)
-
-        fab_send_audio.hide()
+        fab_group_send_audio.hide()
         mFileName = "${filesDir.absolutePath}/audiorecordtest.3gp"
         var mStartRecording = true
 
-
-        fab_send_file.hide()
-        fab_send_photo.hide()
-        fab_send_image.hide()
-        downloadProgressBar.visibility = View.VISIBLE
+        fab_group_send_file.hide()
+        fab_group_send_photo.hide()
+        fab_group_send_image.hide()
+        download_group_ProgressBar.visibility = View.GONE
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = intent.getStringExtra(AppConstants.USER_NAME)
+        supportActionBar?.title = intent.getStringExtra(AppConstants.GROUP_NAME)
 
         FirestoreUtil.getCurrentUser {
             currentUser = it
         }
 
-        otherUserId = intent.getStringExtra(AppConstants.USER_ID)
-        FirestoreUtil.getOrCreateChatChannel(otherUserId) { channelId ->
-            currentChannelId = channelId
+        //otherUserId = intent.getStringExtra(AppConstants.USER_ID)
+        //FirestoreUtil.getOrCreateChatChannel(otherUserId) { channelId ->
+        currentChannelId = intent.getStringExtra(AppConstants.GROUP_ID)
+        otherUserId = currentChannelId
 
-            messagesListenerRegistration =
-                    FirestoreUtil.addChatMessagesListener(channelId, this, this::onMessageChanged)
+        //TODO: CREAR LA FUNCION addChatMessagesListener para grupos
+        messagesListenerRegistration =
+                FirestoreUtil.addGroupChatMessagesListener(currentChannelId, this, this::onMessageChanged)
 
-            imageView_send.setOnClickListener {
-                val messageToSend =
-                        TextMessage(editText_message.text.toString(), Calendar.getInstance().time,
-                                FirebaseAuth.getInstance().currentUser!!.uid,
-                                otherUserId, currentUser.name)
-                editText_message.setText("")
-                FirestoreUtil.sendMessage(messageToSend, channelId)
+        imageView_send.setOnClickListener {
+            val messageToSend =
+                    TextMessage(editText_message.text.toString(), Calendar.getInstance().time,
+                            FirebaseAuth.getInstance().currentUser!!.uid,
+                            otherUserId, currentUser.name)
+            editText_message.setText("")
+            FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
+        }
+
+
+        fab_send.setOnClickListener {
+            fab_group_send_audio.show()
+            fab_group_send_file.show()
+            fab_group_send_photo.show()
+            fab_group_send_image.show()
+        }
+
+        fab_group_send_file.setOnClickListener {
+            val intent = Intent().apply {
+                type = "*/*"
+                action = Intent.ACTION_GET_CONTENT
+                //putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png"))
             }
+            startActivityForResult(Intent.createChooser(intent, "Select file"), RC_SELECT_FILE)
+        }
 
-
-            fab_send.setOnClickListener {
-                fab_send_audio.show()
-                fab_send_file.show()
-                fab_send_photo.show()
-                fab_send_image.show()
+        fab_group_send_image.setOnClickListener {
+            val intent = Intent().apply {
+                type = "image/*"
+                action = Intent.ACTION_GET_CONTENT
+                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png"))
             }
+            startActivityForResult(Intent.createChooser(intent, "Select image"), RC_SELECT_IMAGE_FILE)
+        }
 
-            fab_send_file.setOnClickListener {
-                val intent = Intent().apply {
-                    type = "*/*"
-                    action = Intent.ACTION_GET_CONTENT
-                    //putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png"))
-                }
-                startActivityForResult(Intent.createChooser(intent, "Select file"), RC_SELECT_FILE)
+        fab_group_send_photo.setOnClickListener {
+            if (!cameraPermissionGranted) {
+                requestCameraPermission()
+            } else {
+                val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                //startActivityForResult(Intent.createChooser(intent, "Camera"), RC_SELECT_IMAGE)
+                startActivityForResult(intent, RC_SELECT_IMAGE)
             }
-
-            fab_send_image.setOnClickListener {
-                val intent = Intent().apply {
-                    type = "image/*"
-                    action = Intent.ACTION_GET_CONTENT
-                    putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png"))
-                }
-                startActivityForResult(Intent.createChooser(intent, "Select image"), RC_SELECT_IMAGE_FILE)
-            }
-
-            fab_send_photo.setOnClickListener {
-                if (!cameraPermissionGranted) {
-                    requestCameraPermission()
-                }
-                else {
-                    val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                    //startActivityForResult(Intent.createChooser(intent, "Camera"), RC_SELECT_IMAGE)
-                    startActivityForResult(intent, RC_SELECT_IMAGE)
-                }
-            }
+        }
 
 
-            fab_send_audio.setOnClickListener {
-                if (!permissionToRecordAccepted) {
-                    requestRecordPermission()
-                }
-                else {
-                    if (!permissionToWriteAccepted) {
-                        requestWritePermission()
-                    }
-                    else {
-                        var path = File(Environment.getExternalStorageDirectory().getPath() + "/Music")
-                        file = File.createTempFile("temporary", ".3gp", path)
-                        onRecord(mStartRecording)
-                        mStartRecording = !mStartRecording
-                    }
+        fab_group_send_audio.setOnClickListener {
+            if (!permissionToRecordAccepted) {
+                requestRecordPermission()
+            } else {
+                if (!permissionToWriteAccepted) {
+                    requestWritePermission()
+                } else {
+                    var path = File(Environment.getExternalStorageDirectory().getPath() + "/Music")
+                    file = File.createTempFile("temporary", ".3gp", path)
+                    onRecord(mStartRecording)
+                    mStartRecording = !mStartRecording
                 }
             }
         }
+
+        fab_group_add_member.setOnClickListener {
+            addMember()
+        }
+    //}
     }
 
     override fun onResume() {
         super.onResume()
-        fab_send_audio.hide()
-        fab_send_file.hide()
-        fab_send_photo.hide()
-        fab_send_image.hide()
+        fab_group_send_audio.hide()
+        fab_group_send_file.hide()
+        fab_group_send_photo.hide()
+        fab_group_send_image.hide()
     }
 
     override fun onStop() {
@@ -273,12 +270,12 @@ class ChatActivity : AppCompatActivity() {
             val selectedImageBytes = outputStream.toByteArray()
 
             StorageUtil.uploadMessageImage(selectedImageBytes, this) { imagePath ->
-                Toast.makeText(this@ChatActivity, "Foto Enviada", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@GroupChatActivity, "Foto Enviada", Toast.LENGTH_SHORT).show()
                 val messageToSend =
                         ImageMessage(imagePath, Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
                                 otherUserId, currentUser.name)
-                FirestoreUtil.sendMessage(messageToSend, currentChannelId)
+                FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
             }
         }
 
@@ -297,7 +294,7 @@ class ChatActivity : AppCompatActivity() {
                         FileMessage(filePath, filename, Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
                                 otherUserId, currentUser.name)
-                FirestoreUtil.sendMessage(messageToSend, currentChannelId)
+                FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
             }*/
 
             val uri = data.data
@@ -320,7 +317,7 @@ class ChatActivity : AppCompatActivity() {
                             FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+name, filename, ext, Calendar.getInstance().time,
                                     FirebaseAuth.getInstance().currentUser!!.uid,
                                     otherUserId, currentUser.name)
-                    FirestoreUtil.sendMessage(messageToSend, currentChannelId)
+                    FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
                 }.addOnProgressListener { taskSnapshot ->
                     Toast.makeText(this, "Subiendo", Toast.LENGTH_LONG).show()
                 }
@@ -341,12 +338,12 @@ class ChatActivity : AppCompatActivity() {
             val selectedImageBytes = outputStream.toByteArray()
 
             StorageUtil.uploadMessageImage(selectedImageBytes, this) { imagePath ->
-                Toast.makeText(this@ChatActivity, "Imagen Enviada", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@GroupChatActivity, "Imagen Enviada", Toast.LENGTH_SHORT).show()
                 val messageToSend =
                         ImageMessage(imagePath, Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
                                 otherUserId, currentUser.name)
-                FirestoreUtil.sendMessage(messageToSend, currentChannelId)
+                FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
             }
         }
     }
@@ -354,8 +351,8 @@ class ChatActivity : AppCompatActivity() {
 
     private fun onMessageChanged(messages: List<Item>){
         fun init() {
-            recycler_view_messages.apply {
-                layoutManager = LinearLayoutManager(this@ChatActivity)
+            recycler_group_view_messages.apply {
+                layoutManager = LinearLayoutManager(this@GroupChatActivity)
                 adapter = GroupAdapter<ViewHolder>().apply {
                     messagesSection = Section(messages)
                     this.add(messagesSection)
@@ -372,7 +369,7 @@ class ChatActivity : AppCompatActivity() {
         else
             updateItems()
 
-        recycler_view_messages.scrollToPosition(recycler_view_messages.adapter!!.itemCount - 1)
+        recycler_group_view_messages.scrollToPosition(recycler_group_view_messages.adapter!!.itemCount - 1)
     }
 
     //exp3i
@@ -453,16 +450,16 @@ class ChatActivity : AppCompatActivity() {
                     fileReference.getFile(file)
                             .addOnSuccessListener {
                                 Toast.makeText(this,"Descarga Finalizada", Toast.LENGTH_SHORT).show()
-                                downloadProgressBar.visibility = View.GONE
+                                download_group_ProgressBar.visibility = View.GONE
                             }
                             .addOnProgressListener {
                                 //Toast.makeText(this,"Descargando", Toast.LENGTH_SHORT).show()
-                                downloadProgressBar.visibility = View.VISIBLE
+                                download_group_ProgressBar.visibility = View.VISIBLE
                             }
                 }catch (e: IOException){
                     e.printStackTrace()
                     Toast.makeText(this,"Descarga Fallida", Toast.LENGTH_SHORT).show()
-                    downloadProgressBar.visibility = View.GONE
+                    download_group_ProgressBar.visibility = View.GONE
                 }
             }
         }
@@ -484,20 +481,59 @@ class ChatActivity : AppCompatActivity() {
                     fileReference.getFile(file)
                             .addOnSuccessListener {
                                 Toast.makeText(this,"Descarga Finalizada", Toast.LENGTH_SHORT).show()
-                                downloadProgressBar.visibility = View.GONE
+                                download_group_ProgressBar.visibility = View.GONE
                             }
                             .addOnProgressListener {
                                 //Toast.makeText(this,"Descargando", Toast.LENGTH_SHORT).show()
-                                downloadProgressBar.visibility = View.VISIBLE
+                                download_group_ProgressBar.visibility = View.VISIBLE
                             }
                 }catch (e: IOException){
                     e.printStackTrace()
                     Toast.makeText(this,"Descarga Fallida", Toast.LENGTH_SHORT).show()
-                    downloadProgressBar.visibility = View.GONE
+                    download_group_ProgressBar.visibility = View.GONE
                 }
             }
         }
     }
 
     //exp4
+
+    private fun addMember() {
+        val context = this
+        val builder = AlertDialog.Builder(context)
+        builder.setTitle("Nuevo Miembro")
+
+        // https://stackoverflow.com/questions/10695103/creating-custom-alertdialog-what-is-the-root-view
+        // Seems ok to inflate view with null rootView
+        val view = layoutInflater.inflate(R.layout.dialog_new_member, null)
+
+        val categoryEditText = view.findViewById(R.id.categoryEditText) as EditText
+
+        builder.setView(view);
+
+        // set up the ok button
+        builder.setPositiveButton(android.R.string.ok) { dialog, p1 ->
+            val newCategory = categoryEditText.text
+            var isValid = true
+            if (newCategory.isBlank()) {
+                categoryEditText.error = getString(R.string.validation_empty)
+                isValid = false
+            }
+
+            if (isValid) {
+                // do something
+                toast("Miembro agregado")
+            }
+
+            if (isValid) {
+                dialog.dismiss()
+            }
+        }
+
+        builder.setNegativeButton(android.R.string.cancel) { dialog, p1 ->
+            dialog.cancel()
+        }
+
+        builder.show();
+    }
 }
