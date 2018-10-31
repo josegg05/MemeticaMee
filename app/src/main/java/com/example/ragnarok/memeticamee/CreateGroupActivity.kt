@@ -45,7 +45,7 @@ class CreateGroupActivity : AppCompatActivity() {
             else
                 FirestoreUtil.createGroup(editText_group_name.text.toString(),
                         editText_group_bio.text.toString(), null)
-            toast("Creating")
+            toast("Grupo Creado")
         }
     }
 

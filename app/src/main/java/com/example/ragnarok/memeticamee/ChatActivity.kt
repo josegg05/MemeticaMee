@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.media.MediaRecorder
+import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
@@ -49,6 +50,7 @@ import java.util.*
 private const val RC_SELECT_IMAGE = 2
 private const val RC_SELECT_FILE = 3
 private const val RC_SELECT_IMAGE_FILE = 4
+private const val RC_SELECT_AUDIO = 5
 
 private const val REQUEST_CODE_CAMERA_PERMISSION = 9
 private const val REQUEST_CODE_RECORD_PERMISSION = 8
@@ -152,6 +154,34 @@ class ChatActivity : AppCompatActivity() {
             stop()
             release()
             Toast.makeText(this@ChatActivity, "Record Stops", Toast.LENGTH_SHORT).show()
+
+            while(!file.isAbsolute){}
+
+            val uri = Uri.fromFile(file)
+            val filesize = (file.length()/1000).toString()
+            val filename = file.nameWithoutExtension
+            val ext = file.extension
+
+            val name = uri.lastPathSegment
+            var mReference = currentUserRef.child(uri.lastPathSegment)
+            try {
+                mReference.putFile(uri).addOnSuccessListener {
+                    taskSnapshot: UploadTask.TaskSnapshot? -> var url = taskSnapshot!!.downloadUrl.toString()
+                    //Toast.makeText(this, "Archivo Enviado", Toast.LENGTH_LONG).show()
+                    toast("Archivo Enviado")
+                    val messageToSend =
+                            FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+filename, filename, ext, filesize, Calendar.getInstance().time,
+                                    FirebaseAuth.getInstance().currentUser!!.uid,
+                                    otherUserId, currentUser.name)
+                    FirestoreUtil.sendMessage(messageToSend, currentChannelId)
+                }.addOnProgressListener { taskSnapshot ->
+                    //Toast.makeText(this, "Subiendo", Toast.LENGTH_LONG).show()
+                    toast("Subiendo")
+                }
+            }catch (e: Exception) {
+                //Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
+            }
+
         }
         mRecorder = null
     }
@@ -239,15 +269,9 @@ class ChatActivity : AppCompatActivity() {
                     requestRecordPermission()
                 }
                 else {
-                    if (!permissionToWriteAccepted) {
-                        requestWritePermission()
-                    }
-                    else {
-                        var path = File(Environment.getExternalStorageDirectory().getPath() + "/Music")
-                        file = File.createTempFile("temporary", ".3gp", path)
-                        onRecord(mStartRecording)
-                        mStartRecording = !mStartRecording
-                    }
+                    val intent = Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION)
+                    //startActivityForResult(Intent.createChooser(intent, "Camera"), RC_SELECT_IMAGE)
+                    startActivityForResult(intent, RC_SELECT_AUDIO)
                 }
             }
         }
@@ -322,6 +346,36 @@ class ChatActivity : AppCompatActivity() {
                     Toast.makeText(this, "Archivo Enviado", Toast.LENGTH_LONG).show()
                     val messageToSend =
                             //FileMessage(mReference.toString(), name, Calendar.getInstance().time,
+                            FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+name, filename, ext, filesize, Calendar.getInstance().time,
+                                    FirebaseAuth.getInstance().currentUser!!.uid,
+                                    otherUserId, currentUser.name)
+                    FirestoreUtil.sendMessage(messageToSend, currentChannelId)
+                }.addOnProgressListener { taskSnapshot ->
+                    Toast.makeText(this, "Subiendo", Toast.LENGTH_LONG).show()
+                }
+            }catch (e: Exception) {
+                Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
+            }
+        }
+
+        if (requestCode == RC_SELECT_AUDIO && resultCode == Activity.RESULT_OK &&
+                data != null && data.data != null) {
+
+            val uri = data.data
+            var file = contentResolver.openInputStream(uri)
+            val filesize = (file.available()/1000).toString()
+            val filename = java.io.File(data.data.path).nameWithoutExtension
+
+            val ext = "3gp"
+
+            val name = uri.lastPathSegment
+            var mReference = currentUserRef.child(uri.lastPathSegment)
+            try {
+                mReference.putFile(uri).addOnSuccessListener {
+                    taskSnapshot: UploadTask.TaskSnapshot? -> var url = taskSnapshot!!.downloadUrl.toString()
+                    Toast.makeText(this, "Archivo Enviado", Toast.LENGTH_LONG).show()
+                    val messageToSend =
+                    //FileMessage(mReference.toString(), name, Calendar.getInstance().time,
                             FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+name, filename, ext, filesize, Calendar.getInstance().time,
                                     FirebaseAuth.getInstance().currentUser!!.uid,
                                     otherUserId, currentUser.name)

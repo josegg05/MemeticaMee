@@ -16,7 +16,7 @@
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recycler_view_groups_invitations"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="180dp"
         android:background="@color/colorPrimaryLight"
         app:layout_constraintBottom_toBottomOf="parent"
