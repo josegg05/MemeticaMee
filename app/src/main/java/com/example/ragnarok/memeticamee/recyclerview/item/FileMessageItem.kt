@@ -1,9 +1,11 @@
 package com.example.ragnarok.memeticamee.recyclerview.item
 
 import android.content.Context
+import android.view.View
 import com.example.ragnarok.memeticamee.R
 import com.example.ragnarok.memeticamee.model.FileMessage
 import com.xwray.groupie.kotlinandroidextensions.ViewHolder
+import kotlinx.android.synthetic.main.abc_activity_chooser_view.view.*
 import kotlinx.android.synthetic.main.item_file_message.*
 
 class FileMessageItem(val message: FileMessage,
@@ -12,7 +14,9 @@ class FileMessageItem(val message: FileMessage,
 
     override fun bind(viewHolder: ViewHolder, position: Int) {
         super.bind(viewHolder, position)
-        viewHolder.textView_message_filetext.text = message.name
+        viewHolder.textView_message_filetext.text = message.name + "." + message.extension + " size: " + message.size + "KB"
+        viewHolder.textView_message_file_sender.visibility = View.GONE
+        viewHolder.imageView_message_file.setImageResource(R.drawable.ic_insert_drive_file_black_24dp)
     }
 
     //cambiar

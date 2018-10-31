@@ -14,12 +14,20 @@
         android:layout_height="wrap_content"
         android:layout_gravity="end"
         android:background="@drawable/rect_round_primary_color">
+
+        <TextView
+            android:id="@+id/textView_message_sender"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sender" />
+
         <TextView
             android:id="@+id/textView_message_text"
             android:layout_width="wrap_content"
             android:maxWidth="250dp"
             android:minWidth="120dp"
             android:layout_height="wrap_content"
+            android:layout_below="@id/textView_message_sender"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
             android:paddingTop="4dp"
@@ -34,5 +42,6 @@
             android:layout_marginEnd="8dp"
             android:textSize="12sp"
             tools:text="3/15/2018 3:00 PM"/>
+
     </RelativeLayout>
 </FrameLayout>

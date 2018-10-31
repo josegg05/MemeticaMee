@@ -1,30 +1,27 @@
 package com.example.ragnarok.memeticamee.recyclerview.item
 
 import android.content.Context
-import android.view.View
 import com.example.ragnarok.memeticamee.R
-import com.example.ragnarok.memeticamee.glide.GlideApp
-import com.example.ragnarok.memeticamee.model.AudioMessage
-import com.example.ragnarok.memeticamee.util.StorageUtil
+import com.example.ragnarok.memeticamee.model.FileMessage
 import com.xwray.groupie.kotlinandroidextensions.ViewHolder
-import kotlinx.android.synthetic.main.item_audio_message.*
+import kotlinx.android.synthetic.main.item_file_message.*
 
-
-class AudioMessageItem(val message: AudioMessage,
-                       val context: Context)
+class FileMessageGroupItem(val message: FileMessage,
+                           val context: Context)
     : MessageItem(message) {
 
     override fun bind(viewHolder: ViewHolder, position: Int) {
         super.bind(viewHolder, position)
-        viewHolder.textView_message_audiotext.text = message.name + " size: " + message.size + "KB"
-        viewHolder.textView_message_audio_sender.visibility = View.GONE
+        viewHolder.textView_message_filetext.text = message.name + "." +message.extension + " size: " + message.size + "KB"
+        viewHolder.imageView_message_file.setImageResource(R.drawable.ic_insert_drive_file_black_24dp)
+        viewHolder.textView_message_file_sender.text = message.senderName
     }
 
     //cambiar
-    override fun getLayout() = R.layout.item_audio_message
+    override fun getLayout() = R.layout.item_file_message
 
     override fun isSameAs(other: com.xwray.groupie.Item<*>?): Boolean {
-        if (other !is AudioMessageItem)
+        if (other !is FileMessageGroupItem)
             return false
         if (this.message != other.message)
             return false
@@ -32,7 +29,7 @@ class AudioMessageItem(val message: AudioMessage,
     }
 
     override fun equals(other: Any?): Boolean {
-        return isSameAs(other as? AudioMessageItem)
+        return isSameAs(other as? FileMessageGroupItem)
     }
 
     override fun hashCode(): Int {

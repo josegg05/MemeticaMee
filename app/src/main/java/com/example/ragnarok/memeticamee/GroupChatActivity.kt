@@ -16,13 +16,13 @@ import android.view.View
 import android.webkit.MimeTypeMap
 import android.widget.EditText
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import com.example.ragnarok.memeticamee.model.FileMessage
 import com.example.ragnarok.memeticamee.model.ImageMessage
 import com.example.ragnarok.memeticamee.model.TextMessage
 import com.example.ragnarok.memeticamee.model.User
-import com.example.ragnarok.memeticamee.recyclerview.item.FileMessageItem
-import com.example.ragnarok.memeticamee.recyclerview.item.ImageMessageItem
+import com.example.ragnarok.memeticamee.recyclerview.item.*
 import com.example.ragnarok.memeticamee.util.FirestoreUtil
 import com.example.ragnarok.memeticamee.util.FirestoreUtil.addGroupMember
 import com.example.ragnarok.memeticamee.util.StorageUtil
@@ -275,11 +275,12 @@ class GroupChatActivity : AppCompatActivity() {
 
             selectedImageBmp.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
             val selectedImageBytes = outputStream.toByteArray()
+            val filesize = selectedImageBytes.size/1000
 
             StorageUtil.uploadMessageImage(selectedImageBytes, this) { imagePath ->
                 Toast.makeText(this@GroupChatActivity, "Foto Enviada", Toast.LENGTH_SHORT).show()
                 val messageToSend =
-                        ImageMessage(imagePath, Calendar.getInstance().time,
+                        ImageMessage(imagePath, filesize.toString(), Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
                                 currentChannelId, currentUser.name)
                 FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
@@ -318,18 +319,18 @@ class GroupChatActivity : AppCompatActivity() {
             try {
                 mReference.putFile(uri).addOnSuccessListener {
                     taskSnapshot: UploadTask.TaskSnapshot? -> var url = taskSnapshot!!.downloadUrl.toString()
-                    Toast.makeText(this, "Archivo Enviado", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Archivo Enviado", Toast.LENGTH_SHORT).show()
                     val messageToSend =
                             //FileMessage(mReference.toString(), name, Calendar.getInstance().time,
-                            FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+name, filename, ext, Calendar.getInstance().time,
+                            FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+name, filename, ext, filesize, Calendar.getInstance().time,
                                     FirebaseAuth.getInstance().currentUser!!.uid,
                                     currentChannelId, currentUser.name)
                     FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
                 }.addOnProgressListener { taskSnapshot ->
-                    Toast.makeText(this, "Subiendo", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Subiendo", Toast.LENGTH_SHORT).show()
                 }
             }catch (e: Exception) {
-                Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show()
+                Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -343,11 +344,12 @@ class GroupChatActivity : AppCompatActivity() {
 
             selectedImageBmp.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
             val selectedImageBytes = outputStream.toByteArray()
+            val filesize = selectedImageBytes.size/1000
 
             StorageUtil.uploadMessageImage(selectedImageBytes, this) { imagePath ->
                 Toast.makeText(this@GroupChatActivity, "Imagen Enviada", Toast.LENGTH_SHORT).show()
                 val messageToSend =
-                        ImageMessage(imagePath, Calendar.getInstance().time,
+                        ImageMessage(imagePath, filesize.toString(), Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
                                 currentChannelId, currentUser.name)
                 FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
@@ -432,16 +434,42 @@ class GroupChatActivity : AppCompatActivity() {
 
     //exp4
     private val onItemClick = OnItemClickListener {item, view ->
-        if (item is FileMessageItem){
-            downloadToLocalFile(StorageUtil.storageInstance.getReference(item.message.filePath), item.message.extension)
+
+        if (item is TextMessageGroupItem) {
+            toast("quisierascopiarme cierto? :)")
         }
-        else if (item is ImageMessageItem){
-            downloadToLocalImage(StorageUtil.storageInstance.getReference(item.message.imagePath))
+        else{
+            val context = this
+            val builder = AlertDialog.Builder(context)
+            builder.setTitle("Descargar archivo")
+
+            // https://stackoverflow.com/questions/10695103/creating-custom-alertdialog-what-is-the-root-view
+            // Seems ok to inflate view with null rootView
+            val view = layoutInflater.inflate(R.layout.dialog_group_invitation, null)
+            val categoryEditText = view.findViewById<TextView>(R.id.show_message_View)
+            categoryEditText.text = "Desea descargar el archivo?"
+            builder.setView(view);
+
+            // set up the ok button
+            builder.setPositiveButton("Aceptar") { dialog, p1 ->
+                if (item is FileMessageGroupItem) {
+                    downloadToLocalFile(StorageUtil.storageInstance.getReference(item.message.filePath),item.message.size, item.message.extension)
+                } else if (item is ImageMessageGroupItem) {
+                    downloadToLocalImage(StorageUtil.storageInstance.getReference(item.message.imagePath), item.message.size)
+                }
+                dialog.dismiss()
+            }
+
+            builder.setNegativeButton("Cancelar") { dialog, p1 ->
+                dialog.cancel()
+            }
+
+            builder.show()
         }
     }
 
 
-    private fun downloadToLocalFile(fileReference: StorageReference, ext: String){
+    private fun downloadToLocalFile(fileReference: StorageReference,size: String, ext: String){
         if (!permissionToWriteAccepted) {
             requestWritePermission()
         }
@@ -462,6 +490,10 @@ class GroupChatActivity : AppCompatActivity() {
                             .addOnProgressListener {
                                 //Toast.makeText(this,"Descargando", Toast.LENGTH_SHORT).show()
                                 download_group_ProgressBar.visibility = View.VISIBLE
+                                download_group_ProgressBar.setProgress(((it.bytesTransferred/1000)/size.toInt()).toInt())
+                            }.addOnFailureListener {
+                                Toast.makeText(this,"Descarga Fallida", Toast.LENGTH_SHORT).show()
+                                download_group_ProgressBar.visibility = View.GONE
                             }
                 }catch (e: IOException){
                     e.printStackTrace()
@@ -472,7 +504,7 @@ class GroupChatActivity : AppCompatActivity() {
         }
     }
 
-    private fun downloadToLocalImage(fileReference: StorageReference){
+    private fun downloadToLocalImage(fileReference: StorageReference, size: String){
         if (!permissionToWriteAccepted) {
             requestWritePermission()
         }
@@ -493,6 +525,7 @@ class GroupChatActivity : AppCompatActivity() {
                             .addOnProgressListener {
                                 //Toast.makeText(this,"Descargando", Toast.LENGTH_SHORT).show()
                                 download_group_ProgressBar.visibility = View.VISIBLE
+                                download_group_ProgressBar.setProgress(((it.bytesTransferred/1000)/size.toInt()).toInt())
                             }
                 }catch (e: IOException){
                     e.printStackTrace()

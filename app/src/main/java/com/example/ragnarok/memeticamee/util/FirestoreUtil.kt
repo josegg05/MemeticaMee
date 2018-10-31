@@ -304,13 +304,13 @@ object FirestoreUtil {
                     val items = mutableListOf<Item>()
                     querySnapshot!!.documents.forEach {
                         if (it["type"] == MessageType.TEXT)
-                            items.add(TextMessageItem(it.toObject(TextMessage::class.java)!!, context))
+                            items.add(TextMessageGroupItem(it.toObject(TextMessage::class.java)!!, context))
                         else if (it["type"] == MessageType.IMAGE)
-                            items.add(ImageMessageItem(it.toObject(ImageMessage::class.java)!!, context))
+                            items.add(ImageMessageGroupItem(it.toObject(ImageMessage::class.java)!!, context))
                         else if (it["type"] == MessageType.FILE)
-                            items.add(FileMessageItem(it.toObject(FileMessage::class.java)!!, context))
+                            items.add(FileMessageGroupItem(it.toObject(FileMessage::class.java)!!, context))
                         else if (it["type"] == MessageType.AUDIO)
-                            items.add(AudioMessageItem(it.toObject(AudioMessage::class.java)!!, context))
+                            items.add(AudioMessageGroupItem(it.toObject(AudioMessage::class.java)!!, context))
                         return@forEach
                     }
                     onListen(items)

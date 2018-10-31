@@ -45,10 +45,10 @@ object StorageUtil {
             .addOnSuccessListener {
                 onSuccess(ref.path)
             }.addOnProgressListener { taskSnapshot ->
-                Toast.makeText(context, "Subiendo", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Subiendo", Toast.LENGTH_SHORT).show()
             }
         }catch (e: Exception) {
-            Toast.makeText(context, e.toString(), Toast.LENGTH_LONG).show()
+            Toast.makeText(context, e.toString(), Toast.LENGTH_SHORT).show()
         }
     }
 

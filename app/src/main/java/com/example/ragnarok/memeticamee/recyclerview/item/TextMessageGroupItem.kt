@@ -7,12 +7,12 @@ import com.example.ragnarok.memeticamee.model.TextMessage
 import com.xwray.groupie.kotlinandroidextensions.ViewHolder
 import kotlinx.android.synthetic.main.item_text_message.*
 
-class TextMessageItem(val message: TextMessage,
-                      val context: Context)
+class TextMessageGroupItem(val message: TextMessage,
+                           val context: Context)
     : MessageItem(message){
     override fun bind(viewHolder: ViewHolder, position: Int) {
         viewHolder.textView_message_text.text = message.text
-        viewHolder.textView_message_sender.visibility = View.GONE
+        viewHolder.textView_message_sender.text = message.senderName
         super.bind(viewHolder, position)
     }
 
@@ -21,7 +21,7 @@ class TextMessageItem(val message: TextMessage,
 
 
     override fun isSameAs(other: com.xwray.groupie.Item<*>?): Boolean {
-        if (other !is TextMessageItem)
+        if (other !is TextMessageGroupItem)
             return false
         if (this.message != other.message)
             return false
@@ -29,7 +29,7 @@ class TextMessageItem(val message: TextMessage,
     }
 
     override fun equals(other: Any?): Boolean {
-        return isSameAs(other as? TextMessageItem)
+        return isSameAs(other as? TextMessageGroupItem)
     }
 
     override fun hashCode(): Int {

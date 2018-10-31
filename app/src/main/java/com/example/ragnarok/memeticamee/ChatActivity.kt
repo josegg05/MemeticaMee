@@ -15,6 +15,7 @@ import android.util.Log
 import android.view.View
 import android.webkit.MimeTypeMap
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import com.example.ragnarok.memeticamee.model.FileMessage
 import com.example.ragnarok.memeticamee.model.ImageMessage
@@ -22,6 +23,7 @@ import com.example.ragnarok.memeticamee.model.TextMessage
 import com.example.ragnarok.memeticamee.model.User
 import com.example.ragnarok.memeticamee.recyclerview.item.FileMessageItem
 import com.example.ragnarok.memeticamee.recyclerview.item.ImageMessageItem
+import com.example.ragnarok.memeticamee.recyclerview.item.TextMessageItem
 import com.example.ragnarok.memeticamee.util.FirestoreUtil
 import com.example.ragnarok.memeticamee.util.StorageUtil
 import com.google.firebase.auth.FirebaseAuth
@@ -38,6 +40,7 @@ import kotlinx.android.synthetic.main.activity_sing_in.*
 import kotlinx.android.synthetic.main.item_file_message.*
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
+import org.jetbrains.anko.toast
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -168,7 +171,7 @@ class ChatActivity : AppCompatActivity() {
         fab_send_file.hide()
         fab_send_photo.hide()
         fab_send_image.hide()
-        downloadProgressBar.visibility = View.VISIBLE
+        downloadProgressBar.visibility = View.GONE
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = intent.getStringExtra(AppConstants.USER_NAME)
@@ -272,10 +275,12 @@ class ChatActivity : AppCompatActivity() {
             selectedImageBmp.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
             val selectedImageBytes = outputStream.toByteArray()
 
+            val filesize = selectedImageBytes.size/1000
+
             StorageUtil.uploadMessageImage(selectedImageBytes, this) { imagePath ->
                 Toast.makeText(this@ChatActivity, "Foto Enviada", Toast.LENGTH_SHORT).show()
                 val messageToSend =
-                        ImageMessage(imagePath, Calendar.getInstance().time,
+                        ImageMessage(imagePath, filesize.toString(), Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
                                 otherUserId, currentUser.name)
                 FirestoreUtil.sendMessage(messageToSend, currentChannelId)
@@ -317,7 +322,7 @@ class ChatActivity : AppCompatActivity() {
                     Toast.makeText(this, "Archivo Enviado", Toast.LENGTH_LONG).show()
                     val messageToSend =
                             //FileMessage(mReference.toString(), name, Calendar.getInstance().time,
-                            FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+name, filename, ext, Calendar.getInstance().time,
+                            FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+name, filename, ext, filesize, Calendar.getInstance().time,
                                     FirebaseAuth.getInstance().currentUser!!.uid,
                                     otherUserId, currentUser.name)
                     FirestoreUtil.sendMessage(messageToSend, currentChannelId)
@@ -340,10 +345,12 @@ class ChatActivity : AppCompatActivity() {
             selectedImageBmp.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
             val selectedImageBytes = outputStream.toByteArray()
 
+            val filesize = selectedImageBytes.size/1000
+
             StorageUtil.uploadMessageImage(selectedImageBytes, this) { imagePath ->
                 Toast.makeText(this@ChatActivity, "Imagen Enviada", Toast.LENGTH_SHORT).show()
                 val messageToSend =
-                        ImageMessage(imagePath, Calendar.getInstance().time,
+                        ImageMessage(imagePath, filesize.toString(), Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
                                 otherUserId, currentUser.name)
                 FirestoreUtil.sendMessage(messageToSend, currentChannelId)
@@ -428,16 +435,40 @@ class ChatActivity : AppCompatActivity() {
 
     //exp4
     private val onItemClick = OnItemClickListener {item, view ->
-        if (item is FileMessageItem){
-            downloadToLocalFile(StorageUtil.storageInstance.getReference(item.message.filePath), item.message.extension)
+        if (item is TextMessageItem) {
+            toast("quisierascopiarme cierto? :)")
         }
-        else if (item is ImageMessageItem){
-            downloadToLocalImage(StorageUtil.storageInstance.getReference(item.message.imagePath))
+        else {
+            val context = this
+            val builder = AlertDialog.Builder(context)
+            builder.setTitle("Descargar archivo")
+
+            // https://stackoverflow.com/questions/10695103/creating-custom-alertdialog-what-is-the-root-view
+            // Seems ok to inflate view with null rootView
+            val view = layoutInflater.inflate(R.layout.dialog_group_invitation, null)
+            val categoryEditText = view.findViewById<TextView>(R.id.show_message_View)
+            categoryEditText.text = "Desea descargar el archivo?"
+            builder.setView(view);
+
+            builder.setPositiveButton("Aceptar") { dialog, p1 ->
+                if (item is FileMessageItem) {
+                    downloadToLocalFile(StorageUtil.storageInstance.getReference(item.message.filePath), item. message.size, item.message.extension)
+                } else if (item is ImageMessageItem) {
+                    downloadToLocalImage(StorageUtil.storageInstance.getReference(item.message.imagePath), item.message.size)
+                }
+                dialog.dismiss()
+            }
+
+            builder.setNegativeButton("Cancelar") { dialog, p1 ->
+                dialog.cancel()
+            }
+
+            builder.show()
         }
     }
 
 
-    private fun downloadToLocalFile(fileReference: StorageReference, ext: String){
+    private fun downloadToLocalFile(fileReference: StorageReference,size: String, ext: String){
         if (!permissionToWriteAccepted) {
             requestWritePermission()
         }
@@ -458,6 +489,7 @@ class ChatActivity : AppCompatActivity() {
                             .addOnProgressListener {
                                 //Toast.makeText(this,"Descargando", Toast.LENGTH_SHORT).show()
                                 downloadProgressBar.visibility = View.VISIBLE
+                                downloadProgressBar.setProgress(((it.bytesTransferred/1000)/size.toInt()).toInt())
                             }
                 }catch (e: IOException){
                     e.printStackTrace()
@@ -468,7 +500,7 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    private fun downloadToLocalImage(fileReference: StorageReference){
+    private fun downloadToLocalImage(fileReference: StorageReference, size: String){
         if (!permissionToWriteAccepted) {
             requestWritePermission()
         }
@@ -489,6 +521,8 @@ class ChatActivity : AppCompatActivity() {
                             .addOnProgressListener {
                                 //Toast.makeText(this,"Descargando", Toast.LENGTH_SHORT).show()
                                 downloadProgressBar.visibility = View.VISIBLE
+                                downloadProgressBar.setProgress(((it.bytesTransferred/1000)/size.toInt()).toInt())
+
                             }
                 }catch (e: IOException){
                     e.printStackTrace()

@@ -9,13 +9,13 @@ import com.example.ragnarok.memeticamee.util.StorageUtil
 import com.xwray.groupie.kotlinandroidextensions.ViewHolder
 import kotlinx.android.synthetic.main.item_image_message.*
 
-class ImageMessageItem(val message: ImageMessage,
-                       val context: Context)
+class ImageMessageGroupItem(val message: ImageMessage,
+                            val context: Context)
     : MessageItem(message) {
 
     override fun bind(viewHolder: ViewHolder, position: Int) {
         super.bind(viewHolder, position)
-        viewHolder.textView_message_image_sender.visibility = View.GONE
+        viewHolder.textView_message_image_sender.text = message.senderName
         viewHolder.textView_size.text = message.size + "KB"
         GlideApp.with(context)
                 .load(StorageUtil.pathToReference(message.imagePath))
@@ -26,7 +26,7 @@ class ImageMessageItem(val message: ImageMessage,
     override fun getLayout() = R.layout.item_image_message
 
     override fun isSameAs(other: com.xwray.groupie.Item<*>?): Boolean {
-        if (other !is ImageMessageItem)
+        if (other !is ImageMessageGroupItem)
             return false
         if (this.message != other.message)
             return false
@@ -34,7 +34,7 @@ class ImageMessageItem(val message: ImageMessage,
     }
 
     override fun equals(other: Any?): Boolean {
-        return isSameAs(other as? ImageMessageItem)
+        return isSameAs(other as? ImageMessageGroupItem)
     }
 
     override fun hashCode(): Int {
