@@ -24,6 +24,7 @@ import com.example.ragnarok.memeticamee.model.User
 import com.example.ragnarok.memeticamee.recyclerview.item.FileMessageItem
 import com.example.ragnarok.memeticamee.recyclerview.item.ImageMessageItem
 import com.example.ragnarok.memeticamee.util.FirestoreUtil
+import com.example.ragnarok.memeticamee.util.FirestoreUtil.addGroupMember
 import com.example.ragnarok.memeticamee.util.StorageUtil
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
@@ -54,8 +55,9 @@ private const val REQUEST_CODE_READ_EXTERNAL_PERMISSION = 11
 class GroupChatActivity : AppCompatActivity() {
 
     private lateinit var currentChannelId: String
+    private lateinit var currentGroupCreator: String
     private lateinit var currentUser: User
-    private lateinit var otherUserId: String
+
 
     private lateinit var messagesListenerRegistration: ListenerRegistration
     private var shouldInitRecyclerView = true
@@ -170,13 +172,18 @@ class GroupChatActivity : AppCompatActivity() {
         FirestoreUtil.getCurrentUser {
             currentUser = it
         }
-
         //otherUserId = intent.getStringExtra(AppConstants.USER_ID)
         //FirestoreUtil.getOrCreateChatChannel(otherUserId) { channelId ->
         currentChannelId = intent.getStringExtra(AppConstants.GROUP_ID)
-        otherUserId = currentChannelId
 
-        //TODO: CREAR LA FUNCION addChatMessagesListener para grupos
+        /*
+        FirestoreUtil.getCurrentGroupCrator (currentChannelId) {
+            currentGroupCreator = it
+        }
+        if(currentGroupCreator != FirebaseAuth.getInstance().currentUser!!.uid)
+            fab_group_add_member.hide()
+            */
+
         messagesListenerRegistration =
                 FirestoreUtil.addGroupChatMessagesListener(currentChannelId, this, this::onMessageChanged)
 
@@ -184,7 +191,7 @@ class GroupChatActivity : AppCompatActivity() {
             val messageToSend =
                     TextMessage(editText_message.text.toString(), Calendar.getInstance().time,
                             FirebaseAuth.getInstance().currentUser!!.uid,
-                            otherUserId, currentUser.name)
+                            currentChannelId, currentUser.name)
             editText_message.setText("")
             FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
         }
@@ -274,7 +281,7 @@ class GroupChatActivity : AppCompatActivity() {
                 val messageToSend =
                         ImageMessage(imagePath, Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
-                                otherUserId, currentUser.name)
+                                currentChannelId, currentUser.name)
                 FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
             }
         }
@@ -293,7 +300,7 @@ class GroupChatActivity : AppCompatActivity() {
                 val messageToSend =
                         FileMessage(filePath, filename, Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
-                                otherUserId, currentUser.name)
+                                currentChannelId, currentUser.name)
                 FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
             }*/
 
@@ -316,7 +323,7 @@ class GroupChatActivity : AppCompatActivity() {
                             //FileMessage(mReference.toString(), name, Calendar.getInstance().time,
                             FileMessage(FirebaseAuth.getInstance().currentUser!!.uid+"/"+name, filename, ext, Calendar.getInstance().time,
                                     FirebaseAuth.getInstance().currentUser!!.uid,
-                                    otherUserId, currentUser.name)
+                                    currentChannelId, currentUser.name)
                     FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
                 }.addOnProgressListener { taskSnapshot ->
                     Toast.makeText(this, "Subiendo", Toast.LENGTH_LONG).show()
@@ -342,7 +349,7 @@ class GroupChatActivity : AppCompatActivity() {
                 val messageToSend =
                         ImageMessage(imagePath, Calendar.getInstance().time,
                                 FirebaseAuth.getInstance().currentUser!!.uid,
-                                otherUserId, currentUser.name)
+                                currentChannelId, currentUser.name)
                 FirestoreUtil.sendGroupMessage(messageToSend, currentChannelId)
             }
         }
@@ -513,11 +520,14 @@ class GroupChatActivity : AppCompatActivity() {
 
         // set up the ok button
         builder.setPositiveButton(android.R.string.ok) { dialog, p1 ->
-            val newCategory = categoryEditText.text
+            val newMember= categoryEditText.text
             var isValid = true
-            if (newCategory.isBlank()) {
-                categoryEditText.error = getString(R.string.validation_empty)
+            if (newMember.isBlank()) {
+                toast(getString(R.string.validation_empty))
                 isValid = false
+            }
+            else{
+                isValid = addGroupMember(categoryEditText.text.toString(), currentChannelId)
             }
 
             if (isValid) {

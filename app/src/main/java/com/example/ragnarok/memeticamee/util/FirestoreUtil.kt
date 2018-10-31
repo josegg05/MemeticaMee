@@ -12,6 +12,8 @@ import com.example.ragnarok.memeticamee.recyclerview.item.*
 import com.example.ragnarok.memeticamee.task.ContactSetupTask
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.FieldValue
+
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.xwray.groupie.kotlinandroidextensions.Item
@@ -69,14 +71,28 @@ object FirestoreUtil {
                 }
     }
 
+    fun getCurrentGroupCrator(groupId: String, onComplete: (String) -> Unit){
+        groupChannelsCollectionRef.document(groupId).get()
+                .addOnSuccessListener {
+                    onComplete(it["creator"].toString())
+                }
+    }
 
     fun createGroup(name: String = "", bio: String = "", profilePicturePath: String? = null){
 
         val currentUserId = FirebaseAuth.getInstance().currentUser!!.uid
-        val groupToCreate = Group(name, bio, currentUserId, profilePicturePath, mutableListOf(),mutableListOf())
+        val groupToCreate = Group(name, bio, currentUserId, profilePicturePath,mutableListOf())
 
         val newChannel = groupChannelsCollectionRef.document()
         newChannel.set(groupToCreate)
+
+        //revisar
+        currentUserDocRef.get().addOnSuccessListener {
+            newChannel.collection("members").document(currentUserId)
+                    .set(mapOf("email" to it["email"]))
+        }
+
+
 
         currentUserDocRef
                 .collection("engagedGroupChannels")
@@ -143,7 +159,8 @@ object FirestoreUtil {
     }
 
 
-    fun addGroupListener(context: Context, onListen: (List<Item>) -> Unit): ListenerRegistration {
+
+    fun addGroupListener(context: Context, onListen: (List<Item>, List<Item>) -> Unit): ListenerRegistration {
         return firestoreInstance.collection("groupChannels")
                 .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
                     if (firebaseFirestoreException != null) {
@@ -151,16 +168,63 @@ object FirestoreUtil {
                         return@addSnapshotListener
                     }
 
-                    val items = mutableListOf<Item>()
+                    val itemsGroups = mutableListOf<Item>()
+                    val itemsInvited = mutableListOf<Item>()
                     querySnapshot!!.documents.forEach { doc1 ->
                         val groupX = currentUserDocRef.collection("engagedGroupChannels")
                                 .document(doc1.id).get()
-                                    if (groupX != null) {
-                                        //TODO: puede que haya que cambiar en "GroupItem" el userID por groupID. Si no, hay que cambiar acá abajo el "doc1.id" por el userID
-                                        items.add(GroupItem(doc1.toObject(Group::class.java)!!, doc1.id, context))
-                                    }
+                        while(!groupX.isComplete) {}
+                        if (groupX.result.exists())
+                            itemsGroups.add(GroupItem(doc1.toObject(Group::class.java)!!, doc1.id, context))
+
+                        val groupY = currentUserDocRef.collection("invitationGroupChannels")
+                                .document(doc1.id).get()
+                        while(!groupY.isComplete) {}
+                        if (groupY.result.exists())
+                            itemsInvited.add(GroupItem(doc1.toObject(Group::class.java)!!, doc1.id, context))
+
                     }
-                    onListen(items)
+                    onListen(itemsGroups, itemsInvited)
+                }
+    }
+
+    fun addGroupListener2(context: Context, onListen: (List<Item>) -> Unit): ListenerRegistration {
+        return currentUserDocRef.collection("engagedGroupChannels")
+                .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                    if (firebaseFirestoreException != null) {
+                        Log.e("FIRESTORE", "Group listener error.", firebaseFirestoreException)
+                        return@addSnapshotListener
+                    }
+
+                    val itemsGroups = mutableListOf<Item>()
+                    querySnapshot!!.documents.forEach { doc1 ->
+                        val group = firestoreInstance.collection("groupChannels")
+                                .document(doc1.id).get()
+                        while(!group.isComplete) {}
+                        if (group.result.exists())
+                            itemsGroups.add(GroupItem(group.result.toObject(Group::class.java)!!, doc1.id, context))
+                    }
+                    onListen(itemsGroups)
+                }
+    }
+
+    fun addIvitedGroupListener(context: Context, onListen: (List<Item>) -> Unit): ListenerRegistration {
+        return currentUserDocRef.collection("invitationGroupChannels")
+                .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                    if (firebaseFirestoreException != null) {
+                        Log.e("FIRESTORE", "Group listener error.", firebaseFirestoreException)
+                        return@addSnapshotListener
+                    }
+
+                    val itemsInvited = mutableListOf<Item>()
+                    querySnapshot!!.documents.forEach { doc1 ->
+                        val group = firestoreInstance.collection("groupChannels")
+                                .document(doc1.id).get()
+                        while(!group.isComplete) {}
+                        if (group.result.exists())
+                            itemsInvited.add(GroupItem(group.result.toObject(Group::class.java)!!, doc1.id, context))
+                    }
+                    onListen(itemsInvited)
                 }
     }
 
@@ -258,6 +322,53 @@ object FirestoreUtil {
                 .collection("messages")
                 .add(message)
     }
+
+    fun addGroupMember(email: String, newChannel: String): Boolean{
+        var valid = false
+        firestoreInstance.collection("users").get().addOnSuccessListener {querySnapshot ->
+            querySnapshot.documents.forEach {doc ->
+                if (doc["email"] == email){
+                    firestoreInstance.collection("users").document(doc.id)
+                            .collection("invitationGroupChannels")
+                            .document(newChannel)
+                            .set(mapOf("channelId" to newChannel))
+
+                    firestoreInstance.collection("groupChannels").document(newChannel)
+                            .collection("members").document(doc.id)
+                            .set(mapOf("email" to email))
+                    valid = true
+                }
+            }
+        }
+
+        return valid
+    }
+
+    fun acceptDeclineInvitation(delete: Boolean, channel: String): Boolean {
+
+        val currentUserId = FirebaseAuth.getInstance().currentUser!!.uid
+
+        if (!delete){
+            currentUserDocRef
+                    .collection("engagedGroupChannels")
+                    .document(channel)
+                    .set(mapOf("channelId" to channel))
+
+            currentUserDocRef.get().addOnSuccessListener {
+                firestoreInstance.collection("groupChannels").document(channel)
+                        .collection("members").document(currentUserId)
+                        .set(mapOf("email" to it["email"]))
+            }
+        }
+
+        currentUserDocRef
+                .collection("invitationGroupChannels")
+                .document(channel)
+                .delete()
+
+        return true
+    }
+
 
     //region FCM
     fun getFCMRegistrationTokens(onComplete: (tokens: MutableList<String>) -> Unit) {
