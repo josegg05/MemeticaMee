@@ -18,7 +18,7 @@ class GroupItem(val group: Group,
 
     override fun bind(viewHolder: ViewHolder, position: Int) {
         viewHolder.textView_group_name.text = group.name
-        viewHolder.textView_group_bio.text = group.bio
+        viewHolder.textView_group_bio.text = group.bio + ", creador:" + group.creator
         if (group.profilePicturePath != null)
             GlideApp.with(context)
                     .load(StorageUtil.pathToReference(group.profilePicturePath))

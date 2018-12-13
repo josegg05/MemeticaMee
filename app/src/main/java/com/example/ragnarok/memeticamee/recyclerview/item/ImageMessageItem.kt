@@ -17,6 +17,7 @@ class ImageMessageItem(val message: ImageMessage,
         super.bind(viewHolder, position)
         viewHolder.textView_message_image_sender.visibility = View.GONE
         viewHolder.textView_size.text = message.size + "KB"
+
         GlideApp.with(context)
                 .load(StorageUtil.pathToReference(message.imagePath))
                 .placeholder(R.drawable.ic_image_black_24dp)
